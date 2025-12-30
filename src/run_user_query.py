@@ -4,24 +4,39 @@ from gemini_llm import SearchModelOne, SearchModelTwo
 
 def run_query(user_question: str, engine_quran, engine_hadith, model: SearchModelOne) -> AppSearchResponse:
     queries = model.generate_queries(user_question)
-    final_results = []
-    seen_texts = set()
+    
 
+    query_results_map = []
     for q in queries:
         if q['type'] == "quran":
             engine = engine_quran
         else:
             engine = engine_hadith
 
-        raw_results = engine.search(q['query'], q['type'], top_k=5)
-        texts = [r['text'] for r in raw_results]
-        validations = model.filter_results(user_question, q['query'], texts)
+        raw_results = engine.search(q['query'], top_k=5)
+        query_results_map.append({
+            'query': q['query'],
+            'type': q['type'],
+            'results': raw_results
+        })
+    
+    
+    validations_by_query = model.filter_results_batch(user_question, query_results_map)
+    
+    
+    final_results = []
+    seen_texts = set()
+    
+    for q_idx, item in enumerate(query_results_map):
+        raw_results = item['results']
+        validations = validations_by_query.get(q_idx, [])
         
         for val in validations:
-            if val.index < 0 or val.index >= len(raw_results):
+            val_index = val['index']
+            if val_index < 0 or val_index >= len(raw_results):
                 continue
-            if val.is_relevant:
-                res = raw_results[val.index]
+            if val['is_relevant']:
+                res = raw_results[val_index]
                 if res['text'] in seen_texts:
                     continue
                 seen_texts.add(res['text'])
@@ -39,7 +54,7 @@ def run_query(user_question: str, engine_quran, engine_hadith, model: SearchMode
                     metadata=meta,
                     score=res.get('score'),
                     is_relevant=True,
-                    observation=val.observation
+                    observation=val['observation']
                 )
                 final_results.append(item)
 
@@ -61,7 +76,7 @@ def run_query_model_two(user_question: str, engine_quran, engine_hadith, model: 
         else:
             engine = engine_hadith
 
-        raw_results = engine.search(q['query'], q['type'], top_k=5)
+        raw_results = engine.search(q['query'],top_k=2)
         
         for res in raw_results:
             if res['text'] in seen_texts:

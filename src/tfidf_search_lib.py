@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 from preprocessing import SafeIslamicArabicProcessor
 
 
@@ -21,7 +21,7 @@ class TFIDFSearchEngineLib:
         
         self.doc_vectors = self.vectorizer.fit_transform(self.doc_texts)
     
-    def search(self, query: str, top_k: int = 10) -> List[Tuple[str, float, dict]]:
+    def search(self, query: str, top_k: int = 10) -> List[Dict[str, Any]]:
         query_result = self.processor.preprocess(query)
         query_text = ' '.join(query_result['tokens'])
         
@@ -46,6 +46,11 @@ class TFIDFSearchEngineLib:
                 else:
                     doc_id = str(idx)
                 
-                results.append((doc_id, float(scores[idx]), doc))
+                results.append({
+                    'doc_id': doc_id,
+                    'score': float(scores[idx]),
+                    'text': doc.get('arabic_original', ''),
+                    'metadata': doc
+                })
         
         return results

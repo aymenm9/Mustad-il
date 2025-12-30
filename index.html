@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مستديل - البحث في القرآن والحديث</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #f5f1e8;
+            min-height: 100vh;
+            padding: 2rem;
+            color: #3a3a3a;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #faf8f3;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #faf8f3;
+            padding: 2.5rem 2rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid #e8e3d6;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #2c2c2c;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #6b6b6b;
+            font-weight: 300;
+        }
+
+        .search-section {
+            padding: 2rem;
+            background: #faf8f3;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: 1px solid #d4cdb8;
+            border-radius: 6px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            resize: vertical;
+            min-height: 120px;
+            background: #ffffff;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #a89968;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: #4a4a4a;
+            font-size: 0.95rem;
+        }
+
+        .filter-group select {
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #d4cdb8;
+            border-radius: 6px;
+            font-family: inherit;
+            background: #ffffff;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #a89968;
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #faf8f3;
+            background: #8b7e5f;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+
+        .search-btn:hover {
+            background: #756a52;
+        }
+
+        .search-btn:active {
+            background: #655b47;
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            padding: 0 2rem 2rem 2rem;
+            background: #faf8f3;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e8e3d6;
+        }
+
+        .results-header h2 {
+            font-size: 1.4rem;
+            color: #2c2c2c;
+            font-weight: 600;
+        }
+
+        .results-count {
+            font-size: 0.9rem;
+            color: #6b6b6b;
+            background: #f0ebe0;
+            padding: 0.4rem 0.9rem;
+            border-radius: 4px;
+        }
+
+        .queries-display {
+            background: #f0ebe0;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+
+        .queries-display h3 {
+            font-size: 0.95rem;
+            color: #4a4a4a;
+            margin-bottom: 0.7rem;
+            font-weight: 500;
+        }
+
+        .query-tag {
+            display: inline-block;
+            background: #faf8f3;
+            padding: 0.4rem 0.8rem;
+            margin: 0.3rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            border: 1px solid #d4cdb8;
+        }
+
+        .result-card {
+            background: #faf8f3;
+            border: 1px solid #e8e3d6;
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .result-type {
+            padding: 0.35rem 0.9rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .result-type.quran {
+            background: #d4e8d4;
+            color: #2d5a2d;
+        }
+
+        .result-type.hadith {
+            background: #e8d4d4;
+            color: #5a2d2d;
+        }
+
+        .result-score {
+            font-size: 0.85rem;
+            color: #6b6b6b;
+        }
+
+        .result-text {
+            font-family: 'Amiri', serif;
+            font-size: 1.3rem;
+            line-height: 2.2;
+            color: #2c2c2c;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f0ebe0;
+            border-radius: 6px;
+        }
+
+        .result-metadata {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: #6b6b6b;
+        }
+
+        .result-observation {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: #f0ebe0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #4a4a4a;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b6b6b;
+        }
+
+        .spinner {
+            border: 3px solid #e8e3d6;
+            border-top: 3px solid #8b7e5f;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            background: #f5e5e5;
+            color: #5a2d2d;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #d4b8b8;
+        }
+
+        @media (max-width: 640px) {
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>مستديل</h1>
+            <p>محرك البحث في القرآن الكريم والحديث الشريف</p>
+        </div>
+
+        <div class="search-section">
+            <textarea id="searchQuery" class="search-box"
+                placeholder="اكتب سؤالك أو الموضوع الذي تريد البحث عنه بلغة طبيعية..."></textarea>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="engineSelect">محرك البحث:</label>
+                    <select id="engineSelect">
+                        <option value="bm25">BM25 (مخصص)</option>
+                        <option value="bm25_lib">BM25 (مكتبة)</option>
+                        <option value="tfidf">TF-IDF (مخصص)</option>
+                        <option value="tfidf_lib">TF-IDF (مكتبة)</option>
+                        <option value="vsm">VSM (مخصص)</option>
+                        <option value="vsm_lib">VSM (مكتبة)</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="modelSelect">نموذج LLM:</label>
+                    <select id="modelSelect">
+                        <option value="m1">SearchModelOne (مع التحقق)</option>
+                        <option value="m2">SearchModelTwo (بدون تحقق)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="search-btn" id="searchBtn">🔍 بحث</button>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h2>النتائج</h2>
+                <span class="results-count" id="resultsCount">0 نتيجة</span>
+            </div>
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const searchBtn = document.getElementById('searchBtn');
+        const searchQuery = document.getElementById('searchQuery');
+        const engineSelect = document.getElementById('engineSelect');
+        const modelSelect = document.getElementById('modelSelect');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsCount = document.getElementById('resultsCount');
+
+        searchBtn.addEventListener('click', performSearch);
+        searchQuery.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                performSearch();
+            }
+        });
+
+        async function performSearch() {
+            const query = searchQuery.value.trim();
+            if (!query) {
+                alert('الرجاء إدخال سؤال');
+                return;
+            }
+
+            const engine = engineSelect.value;
+            const model = modelSelect.value;
+
+            searchBtn.disabled = true;
+            searchBtn.textContent = '🔄 جاري البحث...';
+
+            resultsSection.style.display = 'block';
+            resultsContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p>جاري البحث في النصوص الإسلامية...</p></div>';
+
+            try {
+                const response = await fetch(`http://localhost:8000/search/${engine}/${model}/${encodeURIComponent(query)}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                resultsContainer.innerHTML = `
+                    <div class="error-message">
+                        <strong>حدث خطأ:</strong> ${error.message}
+                        <br>
+                        <small>تأكد من تشغيل الخادم على localhost:8000</small>
+                    </div>
+                `;
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔍 بحث';
+            }
+        }
+
+        function displayResults(data) {
+            resultsCount.textContent = `${data.results.length} نتيجة`;
+
+            let html = '';
+
+            if (data.generated_queries && data.generated_queries.length > 0) {
+                html += '<div class="queries-display">';
+                html += '<h3>الاستعلامات المولدة:</h3>';
+                data.generated_queries.forEach(q => {
+                    html += `<span class="query-tag">${q.query} <small>(${q.type === 'quran' ? 'قرآن' : 'حديث'})</small></span>`;
+                });
+                html += '</div>';
+            }
+
+            if (data.results.length === 0) {
+                html += '<div class="error-message">لم يتم العثور على نتائج. حاول صياغة السؤال بطريقة مختلفة.</div>';
+            } else {
+                data.results.forEach(result => {
+                    const isQuran = 'chapter' in result.metadata;
+                    const type = isQuran ? 'quran' : 'hadith';
+                    const typeText = isQuran ? 'قرآن' : 'حديث';
+
+                    html += `
+                        <div class="result-card">
+                            <div class="result-header">
+                                <span class="result-type ${type}">${typeText}</span>
+                                ${result.score ? `<span class="result-score">النقاط: ${result.score.toFixed(4)}</span>` : ''}
+                            </div>
+                            <div class="result-text">${result.text}</div>
+                            <div class="result-metadata">
+                                ${isQuran ?
+                            `<span>📖 سورة ${result.metadata.chapter} - آية ${result.metadata.verse}</span>` :
+                            `<span>📚 ${result.metadata.book} - حديث رقم ${result.metadata.hadith_number}</span>`
+                        }
+                            </div>
+                            ${result.observation ? `<div class="result-observation">💡 ${result.observation}</div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            resultsContainer.innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>

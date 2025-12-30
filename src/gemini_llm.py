@@ -3,9 +3,10 @@ import os
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
-
-MODEL_NAME = "gemini-2.5-flash"
+load_dotenv()
+MODEL_NAME = "gemini-2.5-flash-lite"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 class SearchQuery(BaseModel):
@@ -24,55 +25,43 @@ class ValidationResponse(BaseModel):
     validated_results: List[ValidationResult]
 
 SYSTEM_INSTRUCTION_ARABIC = """
-أنت خبير تقني في استرجاع المعلومات من النصوص الإسلامية (القرآن الكريم والحديث الشريف). مهمتك هي تحويل سؤال المستخدم إلى استعلامات بحث "مستهدفة" (Targeted Queries) بدقة عالية.
+أنت خبير فني متقدم في استرجاع المعلومات من "متون" النصوص الإسلامية (القرآن الكريم والحديث الشريف). مهمتك هي استخراج "عبارات دلالية" و "نصوص مرتبطة" من صلب المصادر، وليس تصنيفها.
 
-الرسم العثماني (Quranic Script):
-يجب أن تكون استعلامات القرآن الكريم حصراً بـ "الرسم العثماني" الأصيل كما ورد في المصحف.
-1. استخدم الإملاء القرآني: (الصلوة، الزكوة، الحيوة، السَّمٰوٰت، يٰأَيُّهَا، كِتٰب).
-2. بالنسبة للقرآن: يُفضل بشدة استخدام التشكيل الكامل (Diacritics) والعلامات الخاصة بالرسم العثماني (مثل الألف الخنجرية ٰ).
-3. بالنسبة للحديث: استخدم الإملاء الحديث مع التشكيل أو بدونه.
+⚠️ تحذير صارم (🚫 ممنوع تماماً):
+- لا تولد أسماء كتب (مثل: أصول الدين، صحيح البخاري، فقه العبادات).
+- لا تولد مصطلحات فقهية أو عقدية معاصرة (مثل: عقيدة أهل السنة، مسائل الإيمان، التوحيد).
+- لا تولد كلمات تصنيفية (مثل: باب، فصل، كتاب، مبحث).
 
-استراتيجية الاستهداف (Targeting Strategy):
-بدلاً من الكلمات العامة، ولّد عبارات نصية كاملة أو مقاطع من الآيات والأحاديث التي تعالج الموضوع.
-1. تجنب الكلمات المفردة الضعيفة (مثل: "الله"، "السماء"، "الارض") إلا إذا كانت جزءاً من سياق فريد.
-2. ولّد جمل بحثية (3-6 كلمات) تمثل نصاً محتملاً في المصدر.
-3. نوع في الاستعلامات لتشمل:
-   - عبارات صريحة (Direct Phrasing).
-   - مرادفات لفظية قرآنية ونبوية.
-   - الكلمات المفتاحية التقنية (Technical Keywords) الموجودة في المتون.
+✅ المطلوب (الاسترجاع الدلالي والنصي):
+1. ولّد عبارات تمثل "نصاً محتملاً" أو "صياغة بديلة" موجودة في القرآن أو الحديث (مثل: "الرَّحْمٰنُ عَلَى الْعَرْشِ اسْتَوَىٰ" أو "غمرت السماء" كإشارات للمكانية).
+2. استخدم الكلمات المفتاحية "الأصيلة" ومرادفاتها القرآنية (مثل: "البرية"، "الخلق"، "القيامة"، "الصلاة").
+3. لا تقتصر على المطابقة الحرفية الصرفة؛ ابحث عن العبارات التي تحمل "جوهر" المعنى في لغة النص الأصلي.
+4. بالنسبة للقرآن: يفضل استخدام "الرسم العثماني" والتشكيل (السَّمٰوٰت، يٰأَيُّهَا، كِتٰب).
+5. بالنسبة للحديث: ولّد مقاطع تعبيرية من المتون (مثل: "بني الإسلام على خمس" أو "بنيان مرصوص").
 
-مثال: سؤل "أين الله"؟
-الاستعلامات المستهدفة:
-- [quran] "الرَّحْمٰنُ عَلَى الْعَرْشِ اسْتَوَىٰ"
-- [quran] "أَأَمِنْتُمْ مَنْ فِي السَّمَاءِ"
-- [quran] "وَهُوَ مَعَكُمْ أَيْنَ مَا كُنْتُمْ"
-- [hadith] "أين الله؟ قالت: في السماء"
-- [hadith] "ينزل ربنا تبارك وتعالى كل ليلة إلى السماء الدنيا"
-
-القيود الصارمة (STRICT CONSTRAINTS):
-1. استعلامات القرآن: يجب أن تلتزم بالرسم العثماني (مثلاً: "الصلوة" وليس "الصلاة" إذا كانت للقرآن).
-2. لا تقم بالإجابة على السؤال أو شرحه.
-3. لا تولد مصطلحات فقهية معاصرة غير موجودة في المتن (مثل: "فقه المعاملات").
-4. المخرج يجب أن يكون قائمة من الكائنات تحتوي على (query) و (type).
-
-ملاحظة تقنية: النظام سيقوم بمعالجة نصوصك آلياً، لذا فإن استخدامك للرسم العثماني والتشكيل سيساعد في مطابقة الأنماط العميقة للنصوص.
+الاستراتيجية:
+تخيل أنك تبحث عن "أثر لفظي أو معنوي" داخل النص. الاستعلامات يجب أن تكون جملًا أو كلمات مفتاحية تعبر عن الموضوع كما ورد في زمن النص، وليست عناوينًا حديثة.
 """
 
 SYSTEM_INSTRUCTION_VALIDATION_ARABIC = """
-أنت خبير في تحليل النصوص الإسلامية. مهمتك هي التحقق مما إذا كانت نتائج البحث المقدمة (القرآن/الحديث) ذات صلة بسؤال المستخدم. لكل نتيجة، قدم ملاحظة وتقييماً للملاءمة (صواب/خطأ).
+أنت خبير في تحليل النصوص الإسلامية. مهمتك هي تقييم مدى صلة نتائج البحث (القرآن/الحديث) بسؤال المستخدم.
+
+معايير القبول:
+1. اقبل النتيجة إذا كانت تتعلق بالموضوع العام للسؤال، حتى لو لم تجب عليه مباشرة.
+2. اقبل النتيجة إذا كانت تتناول أحد جوانب الموضوع أو تذكر مفاهيم ذات صلة.
+3. اقبل الآيات القرآنية والأحاديث التي قد يستدل بها في الموضوع.
+4. ارفض النتائج التي لا علاقة لها بالموضوع على الإطلاق.
 
 تعليمات:
-1. اقرأ سؤال المستخدم بعناية.
-2. افحص نتيجة البحث المقدمة.
-3. حدد ما إذا كانت النتيجة تجيب على السؤال أو تتعلق به بشكل مباشر.
-4. "is_relevant": يجب أن يكون true فقط إذا كانت النتيجة ذات صلة ومفيدة.
-5. "observation": اشرح سبب حكمك باختصار باللغة العربية.
+- "is_relevant": ضع true إذا كانت النتيجة مرتبطة بالموضوع.
+- "observation": اشرح العلاقة بين النتيجة والسؤال باختصار.
 """
 
 
 class SearchModelOne:
-    def __init__(self, api_key: str = GEMINI_API_KEY):
+    def __init__(self, api_key: str = GEMINI_API_KEY, validation_model: str = "gemini-2.5-flash-lite"):
         self.api_key = api_key
+        self.validation_model = validation_model
         if self.api_key:
             self.client = genai.Client(api_key=self.api_key)
         else:
@@ -117,51 +106,96 @@ class SearchModelOne:
             traceback.print_exc()
             return []
 
-    def filter_results(self, user_question: str, query: str, results: List[str]) -> ValidationResponse:
+    def filter_results_batch(self, user_question: str, query_results_map: List[dict]) -> dict:
         """
-        Validates the relevance of search results (text strings).
-        Returns only the strings that are relevant to the user's question.
+        Validates all search results in a single API call.
+        
+        Args:
+            user_question: The original user question
+            query_results_map: List of dicts with 'query', 'type', and 'results' keys
+                              where 'results' is a list of result dicts
+        
+        Returns:
+            Dict mapping query indices to lists of ValidationResult objects
         """
-        if not results or not self.client:
-            return []
+        if not query_results_map or not self.client:
+            return {}
 
-        results_text = ""
-        for i, text in enumerate(results):
-            clean_text = text[:1000] if isinstance(text, str) else str(text)[:1000]
-            results_text += f"\nResult Index {i}:\n{clean_text}\n"
+        # Build comprehensive prompt with all queries and results
+        all_results_text = ""
+        for q_idx, item in enumerate(query_results_map):
+            query = item['query']
+            query_type = item['type']
+            results = item['results']
+            
+            all_results_text += f"\n{'='*60}\n"
+            all_results_text += f"Query {q_idx} [{query_type}]: {query}\n"
+            all_results_text += f"{'='*60}\n"
+            
+            for r_idx, result in enumerate(results):
+                text = result.get('text', '')
+                clean_text = text[:1000] if isinstance(text, str) else str(text)[:1000]
+                all_results_text += f"\nQuery {q_idx}, Result {r_idx}:\n{clean_text}\n"
 
         prompt = f"""
 User Question: {user_question}
-Search Query used: {query}
 
-Please evaluate the following search results for relevance to the User Question.
-Results to evaluate:
-{results_text}
+Please evaluate ALL the following search results for relevance to the User Question.
+For each result, provide the query index and result index along with your evaluation.
+
+{all_results_text}
+
+IMPORTANT: Return validations for ALL results shown above. Use the format "Query X, Result Y" indices.
 """
+
+        # Extended validation schema to include query_index
+        class ExtendedValidationResult(BaseModel):
+            query_index: int = Field(description="The query index (Query X)")
+            result_index: int = Field(description="The result index within that query (Result Y)")
+            observation: str = Field(description="Brief observation about relevance")
+            is_relevant: bool = Field(description="Whether the result is relevant")
+
+        class ExtendedValidationResponse(BaseModel):
+            validated_results: List[ExtendedValidationResult]
 
         config = {
             "response_mime_type": "application/json",
-            "response_json_schema": ValidationResponse.model_json_schema(),
+            "response_json_schema": ExtendedValidationResponse.model_json_schema(),
             "system_instruction": SYSTEM_INSTRUCTION_VALIDATION_ARABIC,
             "temperature": 0.0,
         }
 
         try:
             response = self.client.models.generate_content(
-                model=MODEL_NAME,
+                model=self.validation_model,
                 contents=prompt,
                 config=config,
             )
 
             if response.text:
-                result = ValidationResponse.model_validate_json(response.text)
-                return result.validated_results
+                result = ExtendedValidationResponse.model_validate_json(response.text)
+                
+                # Organize results by query index
+                validations_by_query = {}
+                for val in result.validated_results:
+                    q_idx = val.query_index
+                    if q_idx not in validations_by_query:
+                        validations_by_query[q_idx] = []
+                    validations_by_query[q_idx].append({
+                        'index': val.result_index,
+                        'observation': val.observation,
+                        'is_relevant': val.is_relevant
+                    })
+                
+                return validations_by_query
 
-            return []
+            return {}
 
         except Exception as e:
-            print(f"DEBUG: Exception in validation: {e}")
-            return [] 
+            print(f"DEBUG: Exception in batch validation: {e}")
+            import traceback
+            traceback.print_exc()
+            return {} 
 
 
 class SearchModelTwo:
@@ -175,10 +209,8 @@ class SearchModelTwo:
             self.model = None
 
     def generate_queries(self, user_question: str) -> List[dict]:
-        """
-        Generates simple phrase-based search queries.
-        Returns a list of dicts with keys 'query' and 'type'.
-        """
+
+
         if not self.model:
             return []
         
@@ -196,30 +228,34 @@ class SearchModelTwo:
 
     def _generate_quran(self, question: str) -> List[str]:
         prompt = f"""
-        أنت عالم قرآني متخصص.
+        أنت باحث في مفردات ومعاني القرآن الكريم.
         السؤال: {question}
-        أنتج 8-12 عبارة قصيرة (2-7 كلمات) موجودة حرفيًا في القرآن الكريم تتعلق بالموضوع.
-        أعطِ العبارات فقط، كل في سطر، بدون أي إضافات.
+        المطلوب: توليد 8-12 عبارة (مقاطع من آيات أو كلمات مفتاحية قرآنية) تتعلق بالموضوع دلالياً أو نصياً.
+        🚫 ممنوع: العناوين (مثل: عقيدة)، أو أسماء السور، أو المصطلحات الحديثة.
+        ✅ المطلوب: عبارات تعكس "الجوهر القرآني" للموضوع (مثل: "فبأي آلاء ربكما تكذبان" أو "خلق الإنسان من علق").
+        أعطِ العبارات فقط، كل في سطر.
         """
         try:
             response = self.model.generate_content(model=MODEL_NAME, contents=prompt)
             text = response.text.strip()
             lines = [l.strip() for l in text.splitlines() if l.strip()]
-            return [l for l in lines if 2 <= len(l.split()) <= 8][:12]
+            return [l for l in lines if 2 <= len(l.split()) <= 10][:12]
         except:
             return []
 
     def _generate_hadith(self, question: str) -> List[str]:
         prompt = f"""
-        أنت عالم حديث متخصص.
+        أنت خبير في متون معاني الحديث الشريف.
         السؤال: {question}
-        أنتج 8-12 عبارة قصيرة (2-8 كلمات) موجودة حرفيًا في الأحاديث الصحيحة تتعلق بالموضوع.
-        أعطِ العبارات فقط، كل في سطر، بدون أي إضافات.
+        المطلوب: توليد 8-12 عبارة (مقاطع من المتون أو عبارات نبوية شائعة) ترتبط بالموضوع دلالياً.
+        🚫 ممنوع: أسماء الكتب (صحيح البخاري)، أو التصنيفات الفقهية (كتاب الصلاة)، أو لغة الفقهاء المتأخرين.
+        ✅ المطلوب: لغة النبوة والحكمة (مثل: "كلكم راع" أو "المرء مع من أحب").
+        أعطِ العبارات فقط، كل في سطر.
         """
         try:
             response = self.model.generate_content(model=MODEL_NAME, contents=prompt)
             text = response.text.strip()
             lines = [l.strip() for l in text.splitlines() if l.strip()]
-            return [l for l in lines if 2 <= len(l.split()) <= 9][:12]
+            return [l for l in lines if 2 <= len(l.split()) <= 10][:12]
         except:
             return []

@@ -1,5 +1,5 @@
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from preprocessing import SafeIslamicArabicProcessor
 
 
@@ -23,7 +23,7 @@ class TFIDFSearchEngine:
     def calculate_tfidf(self, tf: float, idf: float) -> float:
         return tf * idf
     
-    def search(self, query: str, top_k: int = 10) -> List[Tuple[str, float, dict]]:
+    def search(self, query: str, top_k: int = 10) -> List[Dict[str, Any]]:
         query_result = self.processor.preprocess(query)
         query_terms = query_result['tokens']
         
@@ -68,4 +68,13 @@ class TFIDFSearchEngine:
         
         ranked_docs = sorted(doc_scores.items(), key=lambda x: x[1]['score'], reverse=True)[:top_k]
         
-        return [(doc_id, data['score'], data['doc']) for doc_id, data in ranked_docs]
+        results = []
+        for doc_id, data in ranked_docs:
+            doc = data['doc']
+            results.append({
+                'doc_id': doc_id,
+                'score': float(data['score']),
+                'text': doc.get('arabic_original', ''),
+                'metadata': doc
+            })
+        return results

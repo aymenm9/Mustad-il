@@ -4,7 +4,19 @@ from gemini_llm import SearchModelOne, SearchModelTwo
 from run_user_query import run_query, run_query_model_two
 from schemas import AppSearchResponse
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 engines = {}
 llm_model = {
     "m1": SearchModelOne(),
