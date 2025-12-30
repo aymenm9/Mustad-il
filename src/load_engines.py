@@ -14,7 +14,6 @@ def load_engines_fast():
     """
     processor = SafeIslamicArabicProcessor()
     
-    print("Loading pre-built indices...")
     
     with open('indices/quran_index.json', 'r', encoding='utf-8') as f:
         quran_index = json.load(f)
@@ -27,14 +26,11 @@ def load_engines_fast():
     
     with open('indices/hadith_inverted_index.json', 'r', encoding='utf-8') as f:
         hadith_inverted_index = json.load(f)
-    
-    print(f"✓ Loaded {len(quran_index)} Quran verses")
-    print(f"✓ Loaded {len(hadith_index)} Hadiths")
+
     
     quran_dict = {f"{r['chapter']}_{r['verse']}": r for r in quran_index}
     hadith_dict = {str(r['hadith_id']): r for r in hadith_index}
     
-    print("\nInitializing search engines...")
     
     tfidf_quran = TFIDFSearchEngine(
         inverted_index=quran_inverted_index,
@@ -112,7 +108,7 @@ def load_engines_fast():
         processor=processor
     )
     
-    print("✓ All engines initialized\n")
+    
     
     return {
         'processor': processor,

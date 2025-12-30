@@ -1,5 +1,5 @@
 from load_engines import load_engines_fast
-from gemini_llm import generate_strict_queries, validate_search_results
+from gemini_llm import GeminiSearchModel
 import time
 
 
@@ -48,12 +48,13 @@ def example_llm_search_all_engines():
     print("=" * 70)
     
     engines = load_engines_fast()
+    model = GeminiSearchModel() # Use the class directly
     
     question="من اخر نبی"
     print(f"\nUser Question: '{question}'\n")
     
     print("Step 1: Generating queries...")
-    queries = generate_strict_queries(question)
+    queries = model.generate_queries(question) # Call method on instance
     
     print(f"Generated {len(queries)} queries:")
     for q in queries:
@@ -125,12 +126,13 @@ def example_llm_validated_search():
     print("=" * 70)
     
     engines = load_engines_fast()
+    model = GeminiSearchModel()
     
     question = "اين الله"
     print(f"\nUser Question: '{question}'\n")
     
     print("Step 1: Generating queries...")
-    queries = generate_strict_queries(question)
+    queries = model.generate_queries(question)
     
     if not queries:
         print("No queries generated.")
@@ -148,29 +150,33 @@ def example_llm_validated_search():
     else:
         results = engines['bm25_hadith'].search(query_text, top_k=3)
         
-    search_results = []
-    for res in results:
-        search_results.append({
-            "text": res['text'],
-            "metadata": res['metadata']
-        })
+    # Extract text content for validation
+    texts = [res['text'] for res in results]
         
-    print(f"Found {len(search_results)} candidates. Running LLM Validation...")
+    print(f"Found {len(texts)} candidates. Running LLM Validation...")
     
-    validated_results = validate_search_results(question, query_text, search_results)
+    # Use the new filter_results method which returns only valid texts
+    valid_texts_list = model.filter_results(question, query_text, texts)
     
     print("\n" + "=" * 70)
     print("FINAL RESULTS (Validated by LLM)")
     print("=" * 70)
     
-    relevant_count = 0
-    for i, res in enumerate(validated_results, 1):
-        is_rel = res.get('is_relevant', False)
-        obs = res.get('observation', 'N/A')
+    # We need to map back to original metadata to print nicely
+    # This is a bit tricky since filter_results returns strings, but we can fuzzy match or just print what we have.
+    # For a robust solution, filter_results logic might need to be different in real app, but for example:
+    
+    relevant_count = len(valid_texts_list)
+    
+    # Simple set for checking membership
+    valid_texts_set = set(valid_texts_list)
+    
+    for i, res in enumerate(results, 1):
+        text_content = res['text']
+        is_rel = text_content in valid_texts_set
         
         status = "✅ RELEVANT" if is_rel else "❌ NOT RELEVANT"
         print(f"\n{i}. [{status}]")
-        print(f"   Observation: {obs}")
         
         meta = res['metadata']
         if query_type == "quran":
@@ -179,9 +185,8 @@ def example_llm_validated_search():
             print(f"   Source: {meta['book']} #{meta['hadith_number']}")
             
         print(f"   Text: {res['text'][:150]}...")
-        if is_rel: relevant_count += 1
         
-    print(f"\nSummary: {relevant_count}/{len(validated_results)} results validated as relevant.")
+    print(f"\nSummary: {relevant_count}/{len(results)} results validated as relevant.")
 
 
 def example_compare_engines():
