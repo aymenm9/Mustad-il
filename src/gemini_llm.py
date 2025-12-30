@@ -1,11 +1,12 @@
 from typing import List, Literal, Union
+import os
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
 
 MODEL_NAME = "gemini-2.5-flash"
-GEMINI_API_KEY = "AIzaSyBBD_KmwcMCa5JIcPKaQcBAclE2u-Dh6C4"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 class SearchQuery(BaseModel):
     query: str = Field(description="Explicit Arabic search phrase.")
@@ -69,7 +70,7 @@ SYSTEM_INSTRUCTION_VALIDATION_ARABIC = """
 """
 
 
-class GeminiSearchModel:
+class SearchModelOne:
     def __init__(self, api_key: str = GEMINI_API_KEY):
         self.api_key = api_key
         if self.api_key:
@@ -161,3 +162,64 @@ Results to evaluate:
         except Exception as e:
             print(f"DEBUG: Exception in validation: {e}")
             return [] 
+
+
+class SearchModelTwo:
+    def __init__(self, api_key: str = GEMINI_API_KEY):
+        self.api_key = api_key
+        if self.api_key:
+            self.client = genai.Client(api_key=self.api_key)
+            self.model = self.client.models
+        else:
+            self.client = None
+            self.model = None
+
+    def generate_queries(self, user_question: str) -> List[dict]:
+        """
+        Generates simple phrase-based search queries.
+        Returns a list of dicts with keys 'query' and 'type'.
+        """
+        if not self.model:
+            return []
+        
+        queries = []
+        
+        quran_phrases = self._generate_quran(user_question)
+        for phrase in quran_phrases:
+            queries.append({"query": phrase, "type": "quran"})
+        
+        hadith_phrases = self._generate_hadith(user_question)
+        for phrase in hadith_phrases:
+            queries.append({"query": phrase, "type": "hadith"})
+        
+        return queries
+
+    def _generate_quran(self, question: str) -> List[str]:
+        prompt = f"""
+        أنت عالم قرآني متخصص.
+        السؤال: {question}
+        أنتج 8-12 عبارة قصيرة (2-7 كلمات) موجودة حرفيًا في القرآن الكريم تتعلق بالموضوع.
+        أعطِ العبارات فقط، كل في سطر، بدون أي إضافات.
+        """
+        try:
+            response = self.model.generate_content(model=MODEL_NAME, contents=prompt)
+            text = response.text.strip()
+            lines = [l.strip() for l in text.splitlines() if l.strip()]
+            return [l for l in lines if 2 <= len(l.split()) <= 8][:12]
+        except:
+            return []
+
+    def _generate_hadith(self, question: str) -> List[str]:
+        prompt = f"""
+        أنت عالم حديث متخصص.
+        السؤال: {question}
+        أنتج 8-12 عبارة قصيرة (2-8 كلمات) موجودة حرفيًا في الأحاديث الصحيحة تتعلق بالموضوع.
+        أعطِ العبارات فقط، كل في سطر، بدون أي إضافات.
+        """
+        try:
+            response = self.model.generate_content(model=MODEL_NAME, contents=prompt)
+            text = response.text.strip()
+            lines = [l.strip() for l in text.splitlines() if l.strip()]
+            return [l for l in lines if 2 <= len(l.split()) <= 9][:12]
+        except:
+            return []

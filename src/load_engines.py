@@ -122,10 +122,10 @@ def load_engines_fast():
         'bm25_hadith': bm25_hadith,
         'vsm_quran': vsm_quran,
         'vsm_hadith': vsm_hadith,
-        'tfidf_quran_lib': tfidf_quran_lib,
-        'tfidf_hadith_lib': tfidf_hadith_lib,
-        'bm25_quran_lib': bm25_quran_lib,
-        'bm25_hadith_lib': bm25_hadith_lib,
-        'vsm_quran_lib': vsm_quran_lib,
-        'vsm_hadith_lib': vsm_hadith_lib
+        'tfidf_lib_quran': tfidf_quran_lib,
+        'tfidf_lib_hadith': tfidf_hadith_lib,
+        'bm25_lib_quran': bm25_quran_lib,
+        'bm25_lib_hadith': bm25_hadith_lib,
+        'vsm_lib_quran': vsm_quran_lib,
+        'vsm_lib_hadith': vsm_hadith_lib
     }
